@@ -34,32 +34,38 @@ python make_wordlist.py target.com
 
 Optional arguments:
 
-- `--github-token TOKEN` — use a GitHub token for API searches
+- `--github-token TOKEN` — GitHub token for API searches
 - `--output-dir DIR` — choose a different output folder
 - `--max-wayback N` — maximum Wayback URLs to fetch
 - `--max-github-pages N` — maximum GitHub search pages to scan
 - `--max-workers N` — number of concurrent HTTP workers
 
+### GitHub token
+
+The token is resolved in this order:
+
+1. `--github-token TOKEN` CLI flag
+2. `GITHUB_TOKEN` environment variable
+3. `.tokens` file in the script directory (one token per line, first line used)
+4. Interactive prompt at startup — choose to enter a token or load from `.tokens`
+
 ### Example
 
 ```bash
+python make_wordlist.py example.com
 python make_wordlist.py example.com --github-token ghp_xxxxxx
 ```
 
 ## Outputs
 
-The script writes:
+Only two files are written to `<domain>/`:
 
-- `example.com-alljsfiles.txt` — discovered JavaScript file URLs
-- `example.com-full-payloads.txt` — permuted path payloads generated from discovered paths
-- `example.com-quick-payloads.txt` — top-level folder payloads for quick fuzzing
-- `example.com-wayback-urls.txt` — archived URLs from Wayback
-- `example.com-github-endpoints.txt` — extracted GitHub endpoint URLs
-- `example.com-subdomains.txt` — discovered target subdomains
-- `example.com-live-hosts.txt` — responsive host URLs
+- `example.com-full-payloads.txt` — all permuted path payloads, each prefixed with `/`
+- `example.com-quick-payloads.txt` — top-level folder payloads for quick fuzzing, each prefixed with `/`
 
 ## Notes
 
-- The script expects a plain domain like `example.com`, not `https://example.com`
-- It uses Python logic instead of the original toolchain (`waybackurls`, `unfurl`, `httpx`, `getJS`, `sprawl`)
-- GitHub search is best with a token to avoid API rate limits
+- Pass a plain domain like `example.com`, not `https://example.com`
+- Payloads are prefixed with `/` — e.g. `/wp/wp-json/v2/posts`
+- GitHub search is heavily rate-limited without a token
+- Uses Python instead of the original toolchain (`waybackurls`, `unfurl`, `httpx`, `getJS`, `sprawl`)
