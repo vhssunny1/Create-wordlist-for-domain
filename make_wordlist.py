@@ -315,18 +315,18 @@ def generate_sprawl_payloads(paths: Set[str], max_permutations: int = 100000) ->
         if not tokens:
             continue
         if tokens:
-            quick_payloads.add(tokens[0])
+            quick_payloads.add("/" + tokens[0])
         if len(tokens) == 1:
-            full_payloads.add(tokens[0])
+            full_payloads.add("/" + tokens[0])
             continue
         if len(tokens) > 5:
             windows = [tokens[i : i + 4] for i in range(0, len(tokens), 4)]
             for subset in windows:
                 for perm in itertools.permutations(subset):
-                    full_payloads.add("/".join(perm))
+                    full_payloads.add("/" + "/".join(perm))
         else:
             for perm in itertools.permutations(tokens):
-                full_payloads.add("/".join(perm))
+                full_payloads.add("/" + "/".join(perm))
         if len(full_payloads) > max_permutations:
             break
     return full_payloads, quick_payloads
@@ -431,16 +431,10 @@ def main() -> int:
     full_payloads, quick_payloads = generate_sprawl_payloads(paths)
     print(f"[*] Generated {len(full_payloads)} full payloads and {len(quick_payloads)} quick payloads")
 
-    write_lines(output_dir / f"{domain}-alljsfiles.txt", js_urls)
     write_lines(output_dir / f"{domain}-full-payloads.txt", full_payloads)
     write_lines(output_dir / f"{domain}-quick-payloads.txt", quick_payloads)
-    write_lines(output_dir / f"{domain}-wayback-urls.txt", wayback_urls)
-    write_lines(output_dir / f"{domain}-github-endpoints.txt", github_urls)
-    write_lines(output_dir / f"{domain}-subdomains.txt", sorted(subdomains))
-    write_lines(output_dir / f"{domain}-live-hosts.txt", sorted(live_urls))
 
     print("[*] Done. Output files:")
-    print(f"    {output_dir / f'{domain}-alljsfiles.txt'}")
     print(f"    {output_dir / f'{domain}-full-payloads.txt'}")
     print(f"    {output_dir / f'{domain}-quick-payloads.txt'}")
     return 0
