@@ -22,6 +22,7 @@ except ImportError:
     print("ERROR: Python dependency 'requests' is required. Install with: pip install requests")
     sys.exit(1)
 
+SCRIPT_DIR = Path(__file__).parent
 USER_AGENT = "make_wordlist/1.0 (+https://github.com/Claude/Create-wordlist-domain-v2-with-JS)"
 CDX_URL = "https://web.archive.org/cdx/search/cdx"
 GITHUB_SEARCH_URL = "https://api.github.com/search/code"
@@ -331,6 +332,39 @@ def generate_sprawl_payloads(paths: Set[str], max_permutations: int = 100000) ->
     return full_payloads, quick_payloads
 
 
+def resolve_github_token(cli_token: Optional[str]) -> Optional[str]:
+    if cli_token:
+        return cli_token.strip()
+
+    tokens_file = SCRIPT_DIR / ".tokens"
+    if tokens_file.exists():
+        tokens = [l.strip() for l in tokens_file.read_text(encoding="utf-8").splitlines() if l.strip()]
+        if tokens:
+            print(f"[*] GitHub token loaded from {tokens_file}")
+            return tokens[0]
+
+    print("\nNo GitHub token found. GitHub search is heavily rate-limited without one.")
+    print("  1) Enter token now")
+    print("  2) Load from .tokens file  (one token per line, place at script directory)")
+    print("  0) Skip (proceed without token)")
+    choice = input("Choice [0/1/2]: ").strip()
+
+    if choice == "1":
+        token = input("Enter GitHub token: ").strip()
+        return token or None
+    elif choice == "2":
+        if not tokens_file.exists():
+            print(f"  Create {tokens_file} with one token per line and re-run.")
+            return None
+        tokens = [l.strip() for l in tokens_file.read_text(encoding="utf-8").splitlines() if l.strip()]
+        if not tokens:
+            print("  .tokens file is empty.")
+            return None
+        print(f"  Loaded token from {tokens_file}")
+        return tokens[0]
+    return None
+
+
 def ensure_dependencies() -> None:
     try:
         import requests  # noqa: F401
@@ -357,6 +391,8 @@ def main() -> int:
         print(f"ERROR: {exc}")
         return 1
 
+    github_token = resolve_github_token(args.github_token)
+
     output_dir = Path(args.output_dir or domain)
     mkdirp(output_dir)
     print(f"[*] Writing outputs to: {output_dir}")
@@ -367,7 +403,7 @@ def main() -> int:
 
     print(f"[*] Fetching GitHub endpoints for {domain}...")
     try:
-        github_urls = fetch_github_endpoints(domain, args.github_token, max_pages=args.max_github_pages)
+        github_urls = fetch_github_endpoints(domain, github_token, max_pages=args.max_github_pages)
     except RuntimeError as exc:
         print(f"WARNING: GitHub search failed: {exc}")
         github_urls = []
