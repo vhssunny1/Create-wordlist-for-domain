@@ -217,7 +217,7 @@ def probe_hosts(hosts: Iterable[str], max_workers: int = 30) -> List[str]:
     return sorted(set(urls))
 
 
-def get_html_js_urls(html: str, base_url: str, target_domain: str) -> Set[str]:
+def get_html_js_urls(page_html: str, base_url: str, target_domain: str) -> Set[str]:
     urls = set()
 
     class ScriptExtractor(html.parser.HTMLParser):
@@ -229,7 +229,7 @@ def get_html_js_urls(html: str, base_url: str, target_domain: str) -> Set[str]:
                     urls.add(urljoin(base_url, value))
 
     parser = ScriptExtractor()
-    parser.feed(html)
+    parser.feed(page_html)
     for js_url in list(urls):
         if not js_url.lower().endswith(".js"):
             urls.discard(js_url)
@@ -259,11 +259,11 @@ def collect_js_files(archive_urls: List[str], github_urls: List[str], target_dom
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(fetch_url_text, url): url for url in page_urls}
         for future in concurrent.futures.as_completed(futures):
-            html = future.result()
-            if not html:
+            page_html = future.result()
+            if not page_html:
                 continue
             base_url = futures[future]
-            urls = get_html_js_urls(html, base_url, target_domain)
+            urls = get_html_js_urls(page_html, base_url, target_domain)
             js_urls.update(urls)
 
     js_candidates = list(js_urls)
